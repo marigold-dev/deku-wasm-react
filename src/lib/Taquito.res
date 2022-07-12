@@ -33,6 +33,10 @@ module Buffer = {
   }
 }
 
+module Prefix = {
+  let dk1 = Buffer.make([ 1, 146, 6 ])
+}
+
 module Hash = {
   type t = Buffer.t
 

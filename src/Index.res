@@ -25,58 +25,6 @@ let defaultContract =
     i64.const 4
     i64.const 99))"
 
-module Tab = {
-  type t =
-    | Source
-    | Storage
-    | Argument
-    | Tickets
-
-  @react.component
-  let make = (~currentTab, ~tab, ~icon, ~label, ~onSelect) => {
-    let style = if currentTab == tab { "bg-deku-1" } else { "bg-deku-3" }
-
-    <button className={"flex px-4 py-1 text-white " ++ style} onClick={_ => onSelect(tab)} >
-      {icon}
-      <span className="px-2">{React.string(label)}</span>
-    </button>
-  }
-
-  let useTab = () => {
-    let (currentTab, setCurrentTab) = React.useState(_ => Source)
-    let selectTab = (tab) => setCurrentTab(_ => tab)
-
-    (currentTab, selectTab)
-  }
-}
-
-module TabContent = {
-  @react.component
-  let make = (~currentTab, ~tab, ~children) => {
-    let visibility = if currentTab == tab { "" } else { "hidden" }
-
-    <div className={"contents h-full " ++ visibility}>
-      {children}
-    </div>
-  }
-}
-
-module ToolbarButton = {
-  @react.component
-  let make = (~animate=false, ~icon, ~onClick) => {
-    <button className="bg-deku-2 cog m-2 p-2 rounded" onClick={_ => onClick()}>
-      {
-        if animate {
-          <div className="animate-spin">
-            {icon}
-          </div>
-        } else {
-          icon
-        }
-      }
-    </button>
-  }
-}
 
 @val
 external prompt : string => Js.Nullable.t<string> = "prompt"
@@ -105,12 +53,29 @@ let default = () => {
   let storage: React.ref<option<CodeMirror.CM.t>> = React.useRef(None)
   let arguments: React.ref<option<CodeMirror.CM.t>> = React.useRef(None)
 
+  let (tickets, setTickets) = React.useState(_ => [])
+
   let (currentTab, selectTab) = Tab.useTab()
 
   let (signer, importKey) = userSigner()
 
   let (loading, setLoading) = React.useState(_ => false)
   let (currentAddress, setCurrentAddress) = React.useState(_ => None)
+
+  React.useEffect1(() => {
+    open Promise
+
+    switch signer {
+    | Some(signer) =>
+        Taquito.Signer.publicKeyHash(signer)
+        ->then(pkh => Deku.tickets(~address=pkh))
+        ->thenResolve(tickets => setTickets(_ => tickets))
+        ->ignore
+    | None => ()
+    }
+
+    None
+  }, [signer])
 
   let originate = () => {
     switch (signer, code.current, storage.current) {
@@ -226,6 +191,14 @@ let default = () => {
         | None => React.null
         }
       }
+
+      {
+        switch tickets {
+        | [] => React.null
+        | _tickets =>
+          <Tab currentTab tab=Tab.Tickets icon={<Icon.Key />} label="Tickets" onSelect=selectTab />
+        }
+      }
     </nav>
 
     <TabContent tab=Tab.Source currentTab>
@@ -238,6 +211,10 @@ let default = () => {
 
     <TabContent tab=Tab.Argument currentTab>
       <CodeMirror language=#JSON code="\"\"" state=arguments />
+    </TabContent>
+
+    <TabContent tab=Tab.Tickets currentTab>
+      <TicketTable tickets />
     </TabContent>
   </main>
 }

@@ -1,64 +1,37 @@
 
-let serializeContractOrigination: (DekuOperation.InitialOperation.t) => Js.Json.t = %raw("
-  (operation) => {
-    return [
-      \"Contract_origination\",
-      {
-        payload: [
-          \"Wasm\",
-          { code: operation.code, storage: operation.storage }
-        ],
-        tickets: operation.tickets
-      }
-    ]
-  }
-")
+let serializeOperationForHash = (initialOperation, source: Taquito.Address.t) => {
+  open Js.Json
 
-let serializeContractInvocation: (DekuOperation.InitialOperation.t) => Js.Json.t = %raw("
-  (operation) => {
-    return [
-      \"Contract_invocation\",
-      {
-        to_invoke: operation.address,
-        argument: [
-          \"Wasm\",
-          operation.argument
-        ],
-        tickets: operation.tickets
-      }
-    ]
-  }
-")
+  array([
+    string(source),
+    initialOperation
+  ])
+}
 
-let serializeOperationForHash : (Taquito.Address.t, Js.Json.t) => Js.Json.t =
-%raw("
-  (source, initialOperation) => {
-    return [
-      source,
-      initialOperation
-    ]
-  }
-")
+let serializeUserOperation = (hash, source, initialOperation) => {
+  open Js.Json
 
-let serializeUserOperation : (string, string, Js.Json.t) => Js.Json.t = %raw("
-  (hash, source, initial_operation) => {
-    return { hash, source, initial_operation }
-  }
-")
+  [
+    ("hash", string(hash)),
+    ("source", string(source)),
+    ("initial_operation", initialOperation)
+  ]
+  ->Js.Dict.fromArray
+  ->object_
+}
 
-let serializeUserOperationForHash: (int, int, Js.Json.t) => Js.Json.t = %raw("
-  (nonce, blockHeight, data) => {
-    return [
-      nonce,
-      blockHeight,
-      data
-    ]
-  }
-")
+let serializeUserOperationForHash = (nonce, blockHeight, data) => {
+  open Js.Json
 
-let tap = (x, f) => {
-  f(x)
-  x
+  array([
+    nonce
+    ->Js.Int.toFloat
+    ->number,
+    blockHeight
+    ->Js.Int.toFloat
+    ->number,
+    data
+  ])
 }
 
 open Promise
@@ -83,15 +56,12 @@ let forge = (initialOperation, ~signer, ~blockHeight) => {
 
   Taquito.Signer.publicKeyHash(signer)
   ->thenResolve(pkh => {
-    let json = switch initialOperation {
-    | DekuOperation.InitialOperation.ContractOrigination(_) => serializeContractOrigination(initialOperation)
-    | ContractInvocation(_) => serializeContractInvocation(initialOperation)
-    }
+    let json = DekuOperation.InitialOperation.toJSON(initialOperation)
 
     let hash =
-      serializeOperationForHash(pkh, json)
+      json
+      ->serializeOperationForHash(pkh)
       ->Js.Json.stringify
-      ->tap(Js.log)
       ->Taquito.Buffer.ofString
       ->Taquito.Hash.hash(32)
 
@@ -115,7 +85,6 @@ let forge = (initialOperation, ~signer, ~blockHeight) => {
 
     let hash =
       payload
-      ->tap(Js.log)
       ->Taquito.Buffer.ofString
       ->Taquito.Hash.hash(32)
 
@@ -136,5 +105,5 @@ let forge = (initialOperation, ~signer, ~blockHeight) => {
 let getContractAddressFromOperation = (operation: DekuOperation.t) => {
   operation.hash
   ->Taquito.Hash.hash(20)
-  ->Taquito.Buffer.b58encode(Taquito.Buffer.make([ 1, 146, 6 ]))
+  ->Taquito.Buffer.b58encode(Taquito.Prefix.dk1)
 }

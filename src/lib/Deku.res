@@ -29,47 +29,20 @@ let blockLevel = () => {
   ->then(data => data["level"])
 }
 
-let ticketBalance = (~address: string, ~ticket: string) => {
-  fetch(
-    "ticket-balance",
-    {
-      "address": address,
-      "ticket": ticket
-    }
-  )
-  ->then(data => data["amount"])
-}
-
-// let _ = () => {
-//   open Js.Json
-
-//   array([
-//     string("Contract_origination"),
-//     [
-//       (
-//         "payload",
-//         array([
-//           string("Wasm"),
-//           [
-//             ("code", string(initialOperation.code)),
-//             ("storage", string(initialOperation.storage))
-//           ]
-//           ->Js_dict.fromArray
-//           ->object_
-//         ])
-//       ),
-//       ("tickets", array([]))
-//     ]
-//     ->Js_dict.fromArray
-//     ->object_
-//   ])
-// }
+let ticketBalance: (~address: Taquito.Address.t, ~ticket: string) => Promise.t<int> =
+  (~address: string, ~ticket: string) => {
+    fetch(
+      "ticket-balance",
+      {
+        "address": address,
+        "ticket": ticket
+      }
+    )
+    ->then(data => data["amount"])
+  }
 
 let userOperationToJson = (operation) => {
-  let json = switch (operation.DekuOperation.data.initialOperation) {
-  | DekuOperation.InitialOperation.ContractOrigination(_) => DekuForgery.serializeContractOrigination(operation.data.initialOperation)
-  | ContractInvocation(_) => DekuForgery.serializeContractInvocation(operation.data.initialOperation)
-  }
+  let json = DekuOperation.InitialOperation.toJSON(operation.DekuOperation.data.initialOperation)
 
   {
     "user_operation": {
@@ -97,6 +70,13 @@ let gossip = (operation) => {
 let getContractStorage = (~address: string) => {
   fetch(
     "contract-storage",
+    { "address": address }
+  )
+}
+
+let tickets = (~address: string) => {
+  fetch(
+    "available-tickets",
     { "address": address }
   )
 }

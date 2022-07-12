@@ -20,6 +20,47 @@ module InitialOperation = {
 
   let invoke = (~address, ~argument, ~tickets) =>
     ContractInvocation({ address, argument, tickets })
+
+  let toJSON = (initialOperation) => {
+    open Js.Json
+
+    switch initialOperation {
+    | ContractOrigination({ code, storage, tickets:_ }) => {
+        array([
+          string("Contract_origination"),
+          [
+            ("payload", array([
+              string("Wasm"),
+              [
+                ("code", string(code)),
+                ("storage", string(storage))
+              ]
+              ->Js.Dict.fromArray
+              ->object_
+            ])),
+            ("tickets", array([]))
+          ]
+          ->Js.Dict.fromArray
+          ->object_
+        ])
+      }
+    | ContractInvocation({ address, argument, tickets:_ }) => {
+        array([
+          string("Contract_invocation"),
+          [
+            ("to_invoke", string(address)),
+            ("argument", array([
+              string("Wasm"),
+              string(argument)
+            ])),
+            ("tickets", array([]))
+          ]
+          ->Js.Dict.fromArray
+          ->object_
+        ])
+      }
+    }
+  }
 }
 
 module Operation = {

@@ -6,15 +6,30 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "re:build": "rescript",
+    "re:start": "rescript build -w"
   },
   "dependencies": {
+    "@codemirror/lang-json": "^6.0.0",
+    "@codemirror/legacy-modes": "^6.1.0",
+    "@rescript/react": "^0.10.3",
+    "@ryyppy/rescript-promise": "^2.1.0",
+    "@stablelib/blake2b": "^1.0.1",
+    "@taquito/signer": "^13.0.1",
+    "@taquito/utils": "^13.0.1",
+    "@uiw/codemirror-theme-darcula": "^4.10.4",
+    "codemirror": "^6.0.1",
     "next": "12.2.0",
     "react": "18.2.0",
     "react-dom": "18.2.0"
   },
   "devDependencies": {
+    "autoprefixer": "^10.4.7",
     "eslint": "8.19.0",
-    "eslint-config-next": "12.2.0"
+    "eslint-config-next": "12.2.0",
+    "postcss": "^8.4.14",
+    "rescript": "^9.1.4",
+    "tailwindcss": "^3.1.4"
   }
 }

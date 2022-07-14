@@ -18,7 +18,6 @@ open Promise
 
 let fetch = (path, payload) => {
   let options = makeParams(payload)
-  Js.log(options)
 
   fetch(nodeBaseUri ++ path, options)
   ->then(Response.json)

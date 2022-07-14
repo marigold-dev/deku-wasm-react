@@ -3,6 +3,7 @@ type t =
   | Storage
   | Argument
   | Tickets
+  | Log
 
 @react.component
 let make = (~currentTab, ~tab, ~icon, ~label, ~onSelect) => {

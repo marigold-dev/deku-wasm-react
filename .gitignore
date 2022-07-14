@@ -35,3 +35,4 @@ yarn-error.log*
 *.bs.js
 .merlin
 .bsb.lock
+*.mjs

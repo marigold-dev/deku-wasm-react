@@ -19,10 +19,13 @@
     "@taquito/signer": "^13.0.1",
     "@taquito/utils": "^13.0.1",
     "@uiw/codemirror-theme-darcula": "^4.10.4",
+    "@webassemblyjs/floating-point-hex-parser": "^1.11.4",
+    "@webassemblyjs/wast-parser": "^1.11.1",
     "codemirror": "^6.0.1",
     "next": "12.2.0",
     "react": "18.2.0",
-    "react-dom": "18.2.0"
+    "react-dom": "18.2.0",
+    "wasm-spec": "github:renatoalencar/spec#rescript"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.7",

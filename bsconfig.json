@@ -12,10 +12,11 @@
       "in-source": true
     }
   ],
-  "suffix": ".bs.js",
+  "suffix": ".mjs",
   "bs-dependencies": [
     "@rescript/react",
-    "@ryyppy/rescript-promise"
+    "@ryyppy/rescript-promise",
+    "wasm-spec"
   ],
   "reason": { "react-jsx": 3 }
 }

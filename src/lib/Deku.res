@@ -60,7 +60,7 @@ let userOperationToJson = (operation) => {
   }
 }
 
-let gossip = (operation) => {
+let gossip = (operation): Promise.t<unit> => {
   fetch(
     "user-operation-gossip",
     userOperationToJson(operation)

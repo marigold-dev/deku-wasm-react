@@ -69,7 +69,7 @@ external basicSetup : extension = "basicSetup"
 
 @new @module("@codemirror/view") external make : editorConfig => t = "EditorView"
 
-@module("@uiw/codemirror-theme-darcula") external darculaTheme: extension = "darcula"
+@module("@uiw/codemirror-theme-dracula") external draculaTheme: extension = "dracula"
 
 @module("@codemirror/lint") external linter : (t => array<diagnostic>) => linterConfig => extension = "linter"
 @module("@codemirror/lint") external lintGutter : unit => extension = "lintGutter"

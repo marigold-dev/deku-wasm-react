@@ -18,7 +18,7 @@
     "@stablelib/blake2b": "^1.0.1",
     "@taquito/signer": "^13.0.1",
     "@taquito/utils": "^13.0.1",
-    "@uiw/codemirror-theme-darcula": "^4.10.4",
+    "@uiw/codemirror-theme-dracula": "^4.11.4",
     "@webassemblyjs/floating-point-hex-parser": "^1.11.4",
     "@webassemblyjs/wast-parser": "^1.11.1",
     "codemirror": "^6.0.1",

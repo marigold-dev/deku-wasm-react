@@ -18,7 +18,7 @@ let make = (~state: React.ref<'a>, ~code: string, ~language: Language.t, ~extens
           extensions: Belt.Array.concat(
             [
               basicSetup,
-              darculaTheme,
+              draculaTheme,
               Language.toExtension(language),
             ],
             extensions

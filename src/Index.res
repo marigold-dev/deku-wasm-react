@@ -39,7 +39,7 @@ let decodeJSONCodeEditor = editor => {
   ->Belt.Option.getExn
 }
 
-@val external prompt : string => option<string> = "prompt"
+@val external prompt : string => Js.Nullable.t<string> = "prompt"
 
 @react.componentrafa
 let default = () => {
@@ -52,9 +52,9 @@ let default = () => {
   let (state, log, dispatch) = State.useState()
 
   let authorize = () => {
-    switch prompt("Private key") {
-    | Some(pk) => dispatch(Action(Authorize(pk)))
-    | None => ()
+    switch prompt("Private key")->Js.Nullable.toOption {
+    | Some(pk) when pk != "" => dispatch(Action(Authorize(pk)))
+    | Some(_) | None => ()
     }
   }
 
@@ -106,7 +106,18 @@ let default = () => {
     dispatch(Action(UpdateStorage))
   }
 
+  let changeNode = () => {
+    switch prompt("Node URL")->Js.Nullable.toOption {
+    | Some(node) when node != "" => Deku.nodeBaseUri := node
+    | Some(_) | None => ()
+    }
+  }
+
   <main className="h-full max-h-full w-full bg-deku-5 flex flex-col">
+    <Next.Head>
+      <title>{React.string("Deku IDE")}</title>
+    </Next.Head>
+
     <header className="flex items-center py-4 px-8 bg-deku-4 h-auto w-full">
       {
         switch state.signer {
@@ -115,6 +126,7 @@ let default = () => {
         }
       }
 
+      <ToolbarButton icon={<Icon.Server />} onClick=changeNode />
       <ToolbarButton icon={<Icon.Key />} onClick=authorize  />
 
       <div className="flex text-white p-2 my-2 mx-8 bg-deku-5 rounded-full align-self-center">
@@ -199,9 +211,9 @@ let default = () => {
       />
 
       <p className="text-white text-sm text-right px-4 pt-2 w-full">
-        {switch Belt.Array.get(log, 0) {
+        {switch Belt.Array.get(log, Belt.Array.length(log) - 1) {
         | None => React.null
-        | Some(entry) => React.string(entry)
+        | Some((entry, _)) => React.string(entry)
         }}
       </p>
     </nav>
@@ -227,14 +239,29 @@ let default = () => {
     </TabContent>
 
     <TabContent tab=Tab.Tickets currentTab>
-      {switch state.tickets {
-      | Some(tickets) => <TicketTable tickets=tickets />
-      | None => React.null
-      }}
+      <div className="container text-white w-full mx-auto my-4 px-8">
+        {switch state.tickets {
+        | Some(tickets) =>
+          <>
+            <Title.H2 label="User tickets" />
+            <TicketTable tickets=tickets />
+          </>
+        | None => React.null
+        }}
+
+        {switch state.contractTickets {
+        | Some(tickets) =>
+          <>
+            <Title.H2 label="Contract tickets" />
+            <TicketTable tickets />
+          </>
+        | None => React.null
+        }}
+      </div>
     </TabContent>
 
     <TabContent tab=Tab.Log currentTab>
-      <LogFile log />
+      <LogFile log dispatch />
     </TabContent>
 
   </main>

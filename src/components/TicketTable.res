@@ -12,7 +12,7 @@ let make = (~tickets) => {
     ->Belt.Array.map (((ticket_id, amount)) => renderItem(~ticket_id, ~amount))
     ->React.array
 
-  <table className="container text-white mx-auto my-4 mt-8">
+  <table className="text-white w-full my-4">
     <thead className="font-bold bg-deku-6">
       <tr>
         <td className="p-3">{React.string("Ticket ID")}</td>

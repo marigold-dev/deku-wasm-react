@@ -3,6 +3,7 @@ open Promise
 type t = {
   signer: option<Taquito.Signer.t>,
   contractAddress: option<string>,
+  contractTickets: option<array<(string, int)>>,
   storage: option<string>,
   tickets: option<array<(string, int)>>
 }
@@ -17,6 +18,7 @@ type rec effect =
   | Action(action)
   | Defer(Promise.t<effect>)
   | UpdateState(t => t)
+  | Noop
 
 @val external setTimeout : (unit => unit) => int => unit = "setTimeout"
 
@@ -30,7 +32,7 @@ let actionHandler = (~state, ~log, action) => {
           signer
           ->Taquito.Signer.publicKeyHash
           ->then(address => {
-            log(`Authenticated as ${address}`)
+            log(`Authenticated as ${address}`, [])
             Deku.tickets(~address)
           })
           ->thenResolve(tickets => {
@@ -58,15 +60,22 @@ let actionHandler = (~state, ~log, action) => {
             switch operation.data.initialOperation {
             | ContractOrigination(_) => {
                 let address = DekuForgery.getContractAddressFromOperation(operation)
-                log(`Originating contract ${address} with operation ${hash}`)
-                UpdateState(state => { ...state, contractAddress: Some(address) })
+                let effect = UpdateState(state => { ...state, contractAddress: Some(address) })
+                log(
+                  `Originating contract ${address} with operation ${hash}`,
+                  [ ("Use this contract", () => effect) ]
+                )
+                effect
               }
             | ContractInvocation({ address, _ }) => {
-                log(`Invoking contract ${address}`)
+                log(
+                  `Invoking contract ${address}`,
+                  [ ("Update storage", () => Action(UpdateStorage)) ]
+                )
 
                 let promise =
                   Promise.make((resolve, _reject) => {
-                    log("Updating storage in 10s")
+                    log("Updating storage in 10s", [])
                     setTimeout(() => resolve(. Action(UpdateStorage)), 10000)
                   })
 
@@ -77,7 +86,13 @@ let actionHandler = (~state, ~log, action) => {
           operation
           ->Deku.gossip
           ->thenResolve(_ => {
-            log(`Operation ${hash} sent`)
+            log(
+              `Operation ${hash} sent`,
+              [
+                ("Receipt", () => Noop),
+                ("Repeat", () => Action(action))
+              ]
+            )
             effect
           })
         })
@@ -86,12 +101,20 @@ let actionHandler = (~state, ~log, action) => {
       Defer(promise)
     }
   | UpdateStorage => {
-      log(`Updating storage`)
+      log(`Updating storage and tickets`, [])
       let address = Belt.Option.getExn(state.contractAddress)
 
       let promise =
-        Deku.getContractStorage(~address)
-        ->thenResolve(storage => UpdateState(state => { ...state, storage: Some(Js.Json.stringify(storage)) }))
+        all2((
+          Deku.getContractStorage(~address),
+          Deku.tickets(~address),
+        ))
+        ->thenResolve(((storage, tickets)) =>
+          UpdateState(state => {
+            ...state,
+            storage: Some(Js.Json.stringify(storage)),
+            contractTickets: Some(tickets)
+        }))
 
       Defer(promise)
     }
@@ -119,12 +142,14 @@ let rec dispatch = (~state, ~stateDispatch, ~log, effect) => {
     ->thenResolve(dispatch(~state, ~stateDispatch, ~log))
     ->ignore
   | UpdateState(fn) => stateDispatch(fn)
+  | Noop => ()
   }
 }
 
 let default = {
   signer: None,
   contractAddress: None,
+  contractTickets: None,
   storage: None,
   tickets: None
 }
@@ -133,8 +158,9 @@ let useState = () => {
   let (state, setState) = React.useState(_ => default)
   let (log, setLog) = React.useState(_ => [])
 
-  let addLog = (effect) =>
-    setLog(Belt.Array.concat([ effect ]))
+  let addLog = (entry, actions) => {
+    setLog(log => Belt.Array.concat(log, [ (entry, actions) ]))
+  }
 
   (state, log, dispatch(~state, ~stateDispatch=setState, ~log=addLog))
 }

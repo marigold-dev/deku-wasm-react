@@ -12,14 +12,14 @@ let makeParams = (body) =>
     "body": Js.Json.stringifyAny(body)
   }
 
-let nodeBaseUri = "http://127.0.0.1:4440/"
+let nodeBaseUri = ref("http://127.0.0.1:4440/")
 
 open Promise
 
 let fetch = (path, payload) => {
   let options = makeParams(payload)
 
-  fetch(nodeBaseUri ++ path, options)
+  fetch(nodeBaseUri.contents ++ path, options)
   ->then(Response.json)
 }
 

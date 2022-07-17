@@ -231,11 +231,21 @@ let default = () => {
     </TabContent>
 
     <TabContent tab=Tab.Storage currentTab>
-      <CodeEditor language=#JSON code="\"\"" state=storage />
+      <CodeEditor
+        language=#JSON
+        code="\"\""
+        state=storage
+        extensions={[ CodeMirror.jsonLinter() ]}
+      />
     </TabContent>
 
     <TabContent tab=Tab.Argument currentTab>
-      <CodeEditor language=#JSON code="\"\"" state=arguments />
+      <CodeEditor
+        language=#JSON
+        code="\"\""
+        state=arguments
+        extensions={[ CodeMirror.jsonLinter() ]}
+      />
     </TabContent>
 
     <TabContent tab=Tab.Tickets currentTab>

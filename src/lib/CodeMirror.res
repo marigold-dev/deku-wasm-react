@@ -123,3 +123,17 @@ let wasmLinter = () => {
     diagnostics
   }, { delay: Some(200) })
 }
+
+let jsonLinter = () => {
+  linter(editor => {
+    let code = contents(editor)
+
+    switch code->Js.Json.parseExn->Js.Json.classify {
+    | Js.Json.JSONString(_) => []
+    | _ =>
+      [ { from: 0, to_: Js.String.length(code), severity: "error", message: "Only string is allowed" } ]
+    | exception _ =>
+      [ { from: 0, to_: Js.String.length(code), severity: "error", message: "Invalid JSON" } ]
+    }
+  }, { delay: None })
+}

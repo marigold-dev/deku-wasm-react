@@ -1,15 +1,46 @@
-let renderItem = (~ticket_id: string, ~amount: int) => {
-  <tr>
+let renderItem = (~selected: bool, ~ticket_id: string, ~amount: int, ~onSelect: string => unit) => {
+  <tr className={if selected {"bg-deku-1"} else {""}} onClick={_ => onSelect(ticket_id)}>
     <td className="p-3">{React.string(ticket_id)}</td>
     <td className="p-3">{amount->Belt.Int.toString->React.string}</td>
   </tr>
 }
 
 @react.component
-let make = (~tickets) => {
+let make = (~tickets, ~onChange=?) => {
+  let (selected, setSelected) = React.useState(_ => Belt.Set.String.empty)
+
+  let onSelect = (ticket_id) => {
+    setSelected(selected => {
+      if Belt.Set.String.has(selected, ticket_id) {
+        Belt.Set.String.remove(selected, ticket_id)
+      } else {
+        Belt.Set.String.add(selected, ticket_id)
+      }
+    })
+  }
+
+  React.useEffect1(() => {
+    switch onChange {
+    | Some(onChange) =>
+      Js.Array.filter(
+        ((ticket_id, _)) => Belt.Set.String.has(selected, ticket_id),
+        tickets
+      )
+      ->onChange
+    | None => ()
+    }
+    None
+  }, [selected])
+
   let tickets =
     tickets
-    ->Belt.Array.map (((ticket_id, amount)) => renderItem(~ticket_id, ~amount))
+    ->Belt.Array.map (((ticket_id, amount)) =>
+      renderItem(
+        ~selected=Belt.Set.String.has(selected, ticket_id),
+        ~ticket_id,
+        ~amount,
+        ~onSelect
+    ))
     ->React.array
 
   <table className="text-white w-full my-4">

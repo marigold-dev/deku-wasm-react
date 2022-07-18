@@ -5,12 +5,14 @@ type t = {
   contractAddress: option<string>,
   contractTickets: option<array<(string, int)>>,
   storage: option<string>,
-  tickets: option<array<(string, int)>>
+  tickets: option<array<(string, int)>>,
+  selectedTickets: array<(string, int)>
 }
 
 type action =
   | Authorize(string)
   | MakeOperation(DekuOperation.InitialOperation.t)
+  | SetSelectedTickets(array<(string, int)>)
   | UpdateStorage
   | UpdateTickets
 
@@ -128,6 +130,9 @@ let actionHandler = (~state, ~log, action) => {
 
       Defer(promise)
     }
+  | SetSelectedTickets(tickets) => {
+      UpdateState(state => { ...state, selectedTickets: tickets })
+    }
   }
 }
 
@@ -151,7 +156,8 @@ let default = {
   contractAddress: None,
   contractTickets: None,
   storage: None,
-  tickets: None
+  tickets: None,
+  selectedTickets: []
 }
 
 let useState = () => {

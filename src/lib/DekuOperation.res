@@ -1,7 +1,11 @@
 module Ticket = {
-  type t = { ticketer: string, data: string }
-}
+  type ticket_id = string
+  type amount = int
 
+  type t = (ticket_id, amount)
+
+  let make = (ticket_id, amount) => (ticket_id, amount)
+}
 module InitialOperation = {
   type t =
     | ContractOrigination({
@@ -21,11 +25,24 @@ module InitialOperation = {
   let invoke = (~address, ~argument, ~tickets) =>
     ContractInvocation({ address, argument, tickets })
 
+  let ticketsToJson = (tickets) => {
+    open Js.Json
+
+    tickets
+    ->Belt.Array.mapWithIndex((idx, (ticket_id, amount)) => {
+      array([
+        array([ string(ticket_id), number(Js.Int.toFloat(amount)) ]),
+        array([ number(Js.Int.toFloat(idx)), null ])
+      ])
+    })
+    ->array
+  }
+
   let toJSON = (initialOperation) => {
     open Js.Json
 
     switch initialOperation {
-    | ContractOrigination({ code, storage, tickets:_ }) => {
+    | ContractOrigination({ code, storage, tickets }) => {
         array([
           string("Contract_origination"),
           [
@@ -38,13 +55,13 @@ module InitialOperation = {
               ->Js.Dict.fromArray
               ->object_
             ])),
-            ("tickets", array([]))
+            ("tickets", ticketsToJson(tickets))
           ]
           ->Js.Dict.fromArray
           ->object_
         ])
       }
-    | ContractInvocation({ address, argument, tickets:_ }) => {
+    | ContractInvocation({ address, argument, tickets }) => {
         array([
           string("Contract_invocation"),
           [
@@ -53,7 +70,7 @@ module InitialOperation = {
               string("Wasm"),
               string(argument)
             ])),
-            ("tickets", array([]))
+            ("tickets", ticketsToJson(tickets))
           ]
           ->Js.Dict.fromArray
           ->object_

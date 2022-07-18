@@ -87,7 +87,7 @@ let default = () => {
       ->CodeMirror.contents
     let storage = decodeJSONCodeEditor(storage.current)
 
-    let operation = DekuOperation.InitialOperation.originate(~code, ~storage, ~tickets=[])
+    let operation = DekuOperation.InitialOperation.originate(~code, ~storage, ~tickets=state.selectedTickets)
     dispatch(Action(MakeOperation(operation)))
   }
 
@@ -98,7 +98,7 @@ let default = () => {
     }
     let argument = decodeJSONCodeEditor(arguments.current)
 
-    let operation = DekuOperation.InitialOperation.invoke(~address, ~argument, ~tickets=[])
+    let operation = DekuOperation.InitialOperation.invoke(~address, ~argument, ~tickets=state.selectedTickets)
     dispatch(Action(MakeOperation(operation)))
   }
 
@@ -111,6 +111,10 @@ let default = () => {
     | Some(node) when node != "" => Deku.nodeBaseUri := node
     | Some(_) | None => ()
     }
+  }
+
+  let changeTickets = (tickets) => {
+    dispatch(Action(SetSelectedTickets(tickets)))
   }
 
   <main className="h-full max-h-full w-full bg-deku-5 flex flex-col">
@@ -254,7 +258,7 @@ let default = () => {
         | Some(tickets) =>
           <>
             <Title.H2 label="User tickets" />
-            <TicketTable tickets=tickets />
+            <TicketTable tickets=tickets onChange=changeTickets />
           </>
         | None => React.null
         }}

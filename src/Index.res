@@ -68,6 +68,25 @@ let default = () => {
         }
     )
 
+  let notification =
+    switch state.notification {
+    | NoNotification => React.null
+    | Error(message) =>
+      <Notification onClose={_ => dispatch(Action(CloseNotification))}>
+        <div className="text-red-400 pr-2">
+          <Icon.Exclamation />
+        </div>
+        {React.string(message)}
+      </Notification>
+    | Success(message) =>
+      <Notification onClose={_ => dispatch(Action(CloseNotification))}>
+        <div className="text-green-400 pr-2">
+          <Icon.Exclamation />
+        </div>
+        {React.string(message)}
+      </Notification>
+    }
+
   React.useEffect1(() => {
     switch (storage.current, state.storage) {
     | (Some(storage), Some(value)) => {
@@ -134,6 +153,7 @@ let default = () => {
       </Next.Head>
 
       {modal}
+      {notification}
 
       <header className="flex items-center py-4 px-8 bg-deku-4 h-auto w-full">
         {

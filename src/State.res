@@ -3,6 +3,11 @@ open Promise
 type modal =
   | Receipt(Deku.receipt)
 
+type notification =
+  | NoNotification
+  | Success(string)
+  | Error(string)
+
 type t = {
   signer: option<Taquito.Signer.t>,
   contractAddress: option<string>,
@@ -10,7 +15,8 @@ type t = {
   storage: option<string>,
   tickets: option<array<(string, int)>>,
   selectedTickets: array<(string, int)>,
-  modal: option<modal>
+  modal: option<modal>,
+  notification: notification
 }
 
 type action =
@@ -21,6 +27,7 @@ type action =
   | UpdateTickets
   | GetReceipt(DekuOperation.t)
   | CloseModal
+  | CloseNotification
 
 type rec effect =
   | Action(action)
@@ -44,7 +51,12 @@ let actionHandler = (~state, ~log, action) => {
             Deku.tickets(~address)
           })
           ->thenResolve(tickets => {
-            UpdateState(state => { ...state, signer: Some(signer), tickets: Some(tickets) })
+            UpdateState(state => {
+              ...state,
+              signer: Some(signer),
+              tickets: Some(tickets),
+              notification: Success("Authenticated successfuly")
+            })
           })
         })
 
@@ -121,7 +133,8 @@ let actionHandler = (~state, ~log, action) => {
           UpdateState(state => {
             ...state,
             storage: Some(Js.Json.stringify(storage)),
-            contractTickets: Some(tickets)
+            contractTickets: Some(tickets),
+            notification: Success("Storage has been updated")
         }))
 
       Defer(promise)
@@ -142,16 +155,27 @@ let actionHandler = (~state, ~log, action) => {
   | GetReceipt(operation) => {
       let promise =
         Deku.receipt(~hash=Taquito.Buffer.toHex(operation.hash))
-        ->thenResolve(receipt => UpdateState(state => {
-          ...state,
-          modal: Some(Receipt(receipt))
-        }))
+        ->thenResolve(receipt => {
+          switch receipt {
+          | Some(receipt) =>
+            UpdateState(state => {
+              ...state,
+              modal: Some(Receipt(receipt))
+            })
+          | None =>
+            UpdateState(state => {
+              ...state,
+              notification: Error("Receipt not found")
+            })
+          }
+        })
 
       Defer(promise)
     }
-  | CloseModal => {
+  | CloseModal =>
       UpdateState(state => { ...state, modal: None })
-    }
+  | CloseNotification =>
+      UpdateState(state => { ...state, notification: NoNotification })
   }
 }
 
@@ -178,6 +202,7 @@ let default = {
   tickets: None,
   selectedTickets: [],
   modal: None,
+  notification: NoNotification
 }
 
 let useState = () => {

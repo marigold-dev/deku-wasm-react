@@ -134,17 +134,18 @@ let receipt = (~hash: string) => {
     { "operation_hash": hash }
   )
   ->thenResolve(data => {
-    switch data {
-    | ("Origination", data) =>
-        Origination({
+    switch Js.Nullable.toOption(data) {
+    | Some(("Origination", data)) =>
+        Some(Origination({
           sender: data["sender"],
           outcome: readContractOriginationOutcome(data["outcome"])
-        })
-    | ("Invocation", data) =>
-        Invocation({
+        }))
+    | Some(("Invocation", data)) =>
+        Some(Invocation({
           sender: data["sender"],
           outcome: readContractInvocationOutcome(data["outcome"])
-        })
+        }))
+    | None => None
     | _ => assert(false)
     }
   })

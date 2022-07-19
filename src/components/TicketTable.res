@@ -1,5 +1,5 @@
 let renderItem = (~selected: bool, ~ticket_id: string, ~amount: int, ~onSelect: string => unit) => {
-  <tr className={if selected {"bg-deku-1"} else {""}} onClick={_ => onSelect(ticket_id)}>
+  <tr key={ticket_id} className={if selected {"bg-deku-1"} else {""}} onClick={_ => onSelect(ticket_id)}>
     <td className="p-3">{React.string(ticket_id)}</td>
     <td className="p-3">{amount->Belt.Int.toString->React.string}</td>
   </tr>

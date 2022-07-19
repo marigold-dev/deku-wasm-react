@@ -41,7 +41,7 @@ let decodeJSONCodeEditor = editor => {
 
 @val external prompt : string => Js.Nullable.t<string> = "prompt"
 
-@react.componentrafa
+@react.component
 let default = () => {
   let code: React.ref<option<CodeMirror.t>> = React.useRef(None)
   let storage: React.ref<option<CodeMirror.t>> = React.useRef(None)
@@ -57,6 +57,16 @@ let default = () => {
     | Some(_) | None => ()
     }
   }
+
+  let modal =
+    Belt.Option.mapWithDefault(
+      state.modal,
+      React.null,
+      modal =>
+        switch modal {
+        | Receipt(receipt) => <Receipt receipt />
+        }
+    )
 
   React.useEffect1(() => {
     switch (storage.current, state.storage) {
@@ -117,166 +127,171 @@ let default = () => {
     dispatch(Action(SetSelectedTickets(tickets)))
   }
 
-  <main className="h-full max-h-full w-full bg-deku-5 flex flex-col">
-    <Next.Head>
-      <title>{React.string("Deku IDE")}</title>
-    </Next.Head>
+  <State.Provider value={dispatch}>
+    <main className="h-full max-h-full w-full bg-deku-5 flex flex-col">
+      <Next.Head>
+        <title>{React.string("Deku IDE")}</title>
+      </Next.Head>
 
-    <header className="flex items-center py-4 px-8 bg-deku-4 h-auto w-full">
-      {
-        switch state.signer {
-        | Some(_) => <ToolbarButton icon={<Icon.Upload />} onClick=originate />
-        | None => React.null
-        }
-      }
+      {modal}
 
-      <ToolbarButton icon={<Icon.Server />} onClick=changeNode />
-      <ToolbarButton icon={<Icon.Key />} onClick=authorize  />
-
-      <div className="flex text-white p-2 my-2 mx-8 bg-deku-5 rounded-full align-self-center">
-        <button
-          className="bg-deku-6 p-2 rounded-full disabled:text-gray-400"
-          disabled={Belt.Option.isNone(state.contractAddress)}
-          onClick=(_ => invoke())
-        >
-          <Icon.Play />
-        </button>
-        <p className="py-2 px-6 pl-4">
-          {
-            state.contractAddress
-            ->Belt.Option.getWithDefault("No contract yet")
-            ->React.string
-          }
-        </p>
-
+      <header className="flex items-center py-4 px-8 bg-deku-4 h-auto w-full">
         {
-          switch state.contractAddress {
-          | Some(_) =>
-            <button className="text-white pr-4" onClick={_ => updateStorage()}>
-              <Icon.Download />
-            </button>
+          switch state.signer {
+          | Some(_) => <ToolbarButton title="Originate contract" icon={<Icon.Upload />} onClick=originate />
           | None => React.null
           }
         }
 
-      </div>
-    </header>
+        <ToolbarButton title="Change node URL" icon={<Icon.Server />} onClick=changeNode />
+        <ToolbarButton title="Set current private key" icon={<Icon.Key />} onClick=authorize  />
 
-    <nav className="w-full flex flex-row">
-      <Tab
-        currentTab
-        tab=Tab.Source
-        icon={<Icon.Code />}
-        label="Source"
-        onSelect=selectTab
-      />
-      <Tab
-        currentTab
-        tab=Tab.Storage
-        icon={<Icon.Database />}
-        label="Storage"
-        onSelect=selectTab
-      />
+        <div className="flex text-white p-2 my-2 mx-8 bg-deku-5 rounded-full align-self-center">
+          <button
+            className="bg-deku-6 p-2 rounded-full disabled:text-gray-400"
+            disabled={Belt.Option.isNone(state.contractAddress)}
+            title="Invoke current contract"
+            onClick=(_ => invoke())
+          >
+            <Icon.Play />
+          </button>
+          <p className="py-2 px-6 pl-4">
+            {
+              state.contractAddress
+              ->Belt.Option.getWithDefault("No contract yet")
+              ->React.string
+            }
+          </p>
 
-      {
-        switch state.contractAddress {
+          {
+            switch state.contractAddress {
+            | Some(_) =>
+              <button className="text-white pr-4" onClick={_ => updateStorage()} title="Update storage and tickets">
+                <Icon.Refresh />
+              </button>
+            | None => React.null
+            }
+          }
+
+        </div>
+      </header>
+
+      <nav className="w-full flex flex-row">
+        <Tab
+          currentTab
+          tab=Tab.Source
+          icon={<Icon.Code />}
+          label="Source"
+          onSelect=selectTab
+        />
+        <Tab
+          currentTab
+          tab=Tab.Storage
+          icon={<Icon.Database />}
+          label="Storage"
+          onSelect=selectTab
+        />
+
+        {
+          switch state.contractAddress {
+          | Some(_) =>
+            <Tab
+              currentTab
+              tab=Tab.Argument
+              icon={<Icon.Adjustments />}
+              label="Argument"
+              onSelect=selectTab
+            />
+          | None =>
+            React.null
+          }
+        }
+
+        {switch state.tickets {
         | Some(_) =>
           <Tab
             currentTab
-            tab=Tab.Argument
-            icon={<Icon.Adjustments />}
-            label="Argument"
+            tab=Tab.Tickets
+            icon={<Icon.Ticket />}
+            label="Tickets"
             onSelect=selectTab
           />
         | None =>
           React.null
-        }
-      }
+        }}
 
-      {switch state.tickets {
-      | Some(_) =>
         <Tab
           currentTab
-          tab=Tab.Tickets
-          icon={<Icon.Ticket />}
-          label="Tickets"
+          tab=Tab.Log
+          icon={<Icon.Table />}
+          label="Log"
           onSelect=selectTab
         />
-      | None =>
-        React.null
-      }}
 
-      <Tab
-        currentTab
-        tab=Tab.Log
-        icon={<Icon.Table />}
-        label="Log"
-        onSelect=selectTab
-      />
+        <p className="text-white text-sm text-right px-4 pt-2 w-full">
+          {switch Belt.Array.get(log, Belt.Array.length(log) - 1) {
+          | None => React.null
+          | Some((entry, _)) => React.string(entry)
+          }}
+        </p>
+      </nav>
 
-      <p className="text-white text-sm text-right px-4 pt-2 w-full">
-        {switch Belt.Array.get(log, Belt.Array.length(log) - 1) {
-        | None => React.null
-        | Some((entry, _)) => React.string(entry)
-        }}
-      </p>
-    </nav>
+      <TabContent tab=Tab.Source currentTab>
+        <CodeEditor
+          language=#Wast
+          code=defaultContract
+          state=code
+          extensions={[
+            CodeMirror.wasmLinter(),
+            CodeMirror.lintGutter()
+          ]}
+        />
+      </TabContent>
 
-    <TabContent tab=Tab.Source currentTab>
-      <CodeEditor
-        language=#Wast
-        code=defaultContract
-        state=code
-        extensions={[
-          CodeMirror.wasmLinter(),
-          CodeMirror.lintGutter()
-        ]}
-      />
-    </TabContent>
+      <TabContent tab=Tab.Storage currentTab>
+        <CodeEditor
+          language=#JSON
+          code="\"\""
+          state=storage
+          extensions={[ CodeMirror.jsonLinter() ]}
+        />
+      </TabContent>
 
-    <TabContent tab=Tab.Storage currentTab>
-      <CodeEditor
-        language=#JSON
-        code="\"\""
-        state=storage
-        extensions={[ CodeMirror.jsonLinter() ]}
-      />
-    </TabContent>
+      <TabContent tab=Tab.Argument currentTab>
+        <CodeEditor
+          language=#JSON
+          code="\"\""
+          state=arguments
+          extensions={[ CodeMirror.jsonLinter() ]}
+        />
+      </TabContent>
 
-    <TabContent tab=Tab.Argument currentTab>
-      <CodeEditor
-        language=#JSON
-        code="\"\""
-        state=arguments
-        extensions={[ CodeMirror.jsonLinter() ]}
-      />
-    </TabContent>
+      <TabContent tab=Tab.Tickets currentTab>
+        <div className="container text-white w-full mx-auto my-4 px-8">
+          {switch state.tickets {
+          | Some(tickets) =>
+            <>
+              <Title.H2 label="User tickets" />
+              <TicketTable tickets=tickets onChange=changeTickets />
+            </>
+          | None => React.null
+          }}
 
-    <TabContent tab=Tab.Tickets currentTab>
-      <div className="container text-white w-full mx-auto my-4 px-8">
-        {switch state.tickets {
-        | Some(tickets) =>
-          <>
-            <Title.H2 label="User tickets" />
-            <TicketTable tickets=tickets onChange=changeTickets />
-          </>
-        | None => React.null
-        }}
+          {switch state.contractTickets {
+          | Some(tickets) =>
+            <>
+              <Title.H2 label="Contract tickets" />
+              <TicketTable tickets />
+            </>
+          | None => React.null
+          }}
+        </div>
+      </TabContent>
 
-        {switch state.contractTickets {
-        | Some(tickets) =>
-          <>
-            <Title.H2 label="Contract tickets" />
-            <TicketTable tickets />
-          </>
-        | None => React.null
-        }}
-      </div>
-    </TabContent>
+      <TabContent tab=Tab.Log currentTab>
+        <LogFile log />
+      </TabContent>
 
-    <TabContent tab=Tab.Log currentTab>
-      <LogFile log dispatch />
-    </TabContent>
-
-  </main>
+    </main>
+  </State.Provider>
 }

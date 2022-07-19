@@ -3,19 +3,21 @@ let lineNumber = (. number, _) =>
     {React.int(number + 1)}
   </p>
 
-let action = (. dispatch) => (. (label, fn)) =>
-  <button className="float-right text-xs bg-deku-4 py-1 px-2 mx-1 rounded" onClick={_ => dispatch(fn())}>
+let action = (. dispatch) => (. idx, (label, fn)) =>
+  <button key={Belt.Int.toString(idx)} className="float-right text-xs bg-deku-4 py-1 px-2 mx-1 rounded" onClick={_ => dispatch(fn())}>
     {React.string(label)}
   </button>
 
 let logLine = (. dispatch) => (. idx, (line, actions)) =>
   <p key={Belt.Int.toString(idx)} className="text-white py-1 w-full">
     {React.string(line)}
-    {actions->Belt.Array.mapU(action(. dispatch))->React.array}
+    {actions->Belt.Array.mapWithIndexU(action(. dispatch))->React.array}
   </p>
 
 @react.component
-let make = (~log, ~dispatch) => {
+let make = (~log) => {
+  let dispatch = State.useDispatch()
+
   <div className="font-mono text-sm flex flex-row h-full max-h-full overflow-scroll p-4">
     <div className="mr-4 text-right text-gray-400">
       {

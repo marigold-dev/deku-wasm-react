@@ -1,3 +1,27 @@
+type receiptStatus<'a> =
+  | Success('a)
+  | Failure
+
+type contractOriginationResult = {
+  address: string,
+  initialTickets: array<(string, int)>
+}
+
+type contractInvocationResult = {
+  remainingTickets: array<(string, int)>,
+  newStorage: string
+}
+
+type receipt =
+  | Origination({
+      sender: Taquito.Address.t,
+      outcome: receiptStatus<contractOriginationResult>
+    })
+  | Invocation({
+      sender: Taquito.Address.t,
+      outcome: receiptStatus<contractInvocationResult>
+    })
+
 module Response = {
   type t<'data>
   @send external json: t<'data> => Promise.t<'data'> = "json"
@@ -78,4 +102,50 @@ let tickets = (~address: string) => {
     "available-tickets",
     { "address": address }
   )
+}
+
+let receipt = (~hash: string) => {
+  let readContractOriginationOutcome = (outcome): receiptStatus<contractOriginationResult> => {
+    switch outcome {
+    | ("Success", data) =>
+        Success({
+          address: data["originated_contract_address" ],
+          initialTickets: data["initial_tickets"]
+        })
+    | ("Failure", _) => Failure
+    | _ => assert false
+    }
+  }
+
+  let readContractInvocationOutcome = (outcome): receiptStatus<contractInvocationResult> => {
+    switch outcome {
+    | ("Success", data) =>
+        Success({
+          remainingTickets: data["remaining_tickets"],
+          newStorage: data["new_storage"]
+        })
+    | ("Failure", _) => Failure
+    | _ => assert(false)
+    }
+  }
+
+  fetch(
+    "receipt",
+    { "operation_hash": hash }
+  )
+  ->thenResolve(data => {
+    switch data {
+    | ("Origination", data) =>
+        Origination({
+          sender: data["sender"],
+          outcome: readContractOriginationOutcome(data["outcome"])
+        })
+    | ("Invocation", data) =>
+        Invocation({
+          sender: data["sender"],
+          outcome: readContractInvocationOutcome(data["outcome"])
+        })
+    | _ => assert(false)
+    }
+  })
 }

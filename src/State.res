@@ -1,12 +1,16 @@
 open Promise
 
+type modal =
+  | Receipt(Deku.receipt)
+
 type t = {
   signer: option<Taquito.Signer.t>,
   contractAddress: option<string>,
   contractTickets: option<array<(string, int)>>,
   storage: option<string>,
   tickets: option<array<(string, int)>>,
-  selectedTickets: array<(string, int)>
+  selectedTickets: array<(string, int)>,
+  modal: option<modal>
 }
 
 type action =
@@ -15,6 +19,8 @@ type action =
   | SetSelectedTickets(array<(string, int)>)
   | UpdateStorage
   | UpdateTickets
+  | GetReceipt(DekuOperation.t)
+  | CloseModal
 
 type rec effect =
   | Action(action)
@@ -91,7 +97,7 @@ let actionHandler = (~state, ~log, action) => {
             log(
               `Operation ${hash} sent`,
               [
-                ("Receipt", () => Noop),
+                ("Receipt", () => Action(GetReceipt(operation))),
                 ("Repeat", () => Action(action))
               ]
             )
@@ -133,6 +139,19 @@ let actionHandler = (~state, ~log, action) => {
   | SetSelectedTickets(tickets) => {
       UpdateState(state => { ...state, selectedTickets: tickets })
     }
+  | GetReceipt(operation) => {
+      let promise =
+        Deku.receipt(~hash=Taquito.Buffer.toHex(operation.hash))
+        ->thenResolve(receipt => UpdateState(state => {
+          ...state,
+          modal: Some(Receipt(receipt))
+        }))
+
+      Defer(promise)
+    }
+  | CloseModal => {
+      UpdateState(state => { ...state, modal: None })
+    }
   }
 }
 
@@ -157,7 +176,8 @@ let default = {
   contractTickets: None,
   storage: None,
   tickets: None,
-  selectedTickets: []
+  selectedTickets: [],
+  modal: None,
 }
 
 let useState = () => {
@@ -170,3 +190,15 @@ let useState = () => {
 
   (state, log, dispatch(~state, ~stateDispatch=setState, ~log=addLog))
 }
+
+let context = React.createContext((_eff: effect) => ())
+module Provider = {
+  let provider = React.Context.provider(context)
+
+  @react.component
+  let make = (~value, ~children) => {
+    React.createElement(provider, {"value": value, "children": children})
+  }
+}
+
+let useDispatch = () => React.useContext(context)

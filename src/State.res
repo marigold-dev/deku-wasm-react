@@ -33,6 +33,7 @@ type rec effect =
   | Action(action)
   | Defer(Promise.t<effect>)
   | UpdateState(t => t)
+  | Both(effect, effect)
   | Noop
 
 @val external setTimeout : (unit => unit) => int => unit = "setTimeout"
@@ -113,7 +114,7 @@ let actionHandler = (~state, ~log, action) => {
                 ("Repeat", () => Action(action))
               ]
             )
-            effect
+            Both(effect, UpdateState(state => { ...state, notification: Success("Operation sent")}))
           })
         })
       }
@@ -205,6 +206,9 @@ let rec dispatch = (~state, ~stateDispatch, ~log, effect) => {
     })
     ->ignore
   | UpdateState(fn) => stateDispatch(fn)
+  | Both(a, b) =>
+    dispatch(~state, ~stateDispatch, ~log, a)
+    dispatch(~state, ~stateDispatch, ~log, b)
   | Noop => ()
   }
 }

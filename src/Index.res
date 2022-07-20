@@ -13,7 +13,7 @@ let defaultContract =
     i32.add
 
     i32.store)
-  
+
   (func (export \"main\") (param i32) (result i64 i64 i64)
     local.get 0
     i32.load
@@ -29,6 +29,8 @@ let defaultContract =
     i64.const 0
     i64.const 4
     i64.const 99))"
+
+let defaultStorage = "\"\u0000\u0000\u0000\u0000\""
 
 let decodeJSONCodeEditor = (editor, dispatch) => {
   let contents =
@@ -294,7 +296,7 @@ let default = () => {
       <TabContent tab=Tab.Storage currentTab>
         <CodeEditor
           language=#JSON
-          code="\"\""
+          code=defaultStorage
           state=storage
           extensions={[ CodeMirror.jsonLinter() ]}
         />

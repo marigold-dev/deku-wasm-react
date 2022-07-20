@@ -4,7 +4,11 @@ let lineNumber = (. number, _) =>
   </p>
 
 let action = (. dispatch) => (. idx, (label, fn)) =>
-  <button key={Belt.Int.toString(idx)} className="float-right text-xs bg-deku-4 py-1 px-2 mx-1 rounded" onClick={_ => dispatch(fn())}>
+  <button
+    key={Belt.Int.toString(idx)}
+    className="float-right text-xs bg-deku-4 py-1 px-2 mx-1 rounded hover:scale-105 hover:drop-shadow transition-all"
+    onClick={_ => dispatch(fn())}
+  >
     {React.string(label)}
   </button>
 

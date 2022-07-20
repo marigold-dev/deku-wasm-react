@@ -30,13 +30,29 @@ let defaultContract =
     i64.const 4
     i64.const 99))"
 
-let decodeJSONCodeEditor = editor => {
-  editor
-  ->Belt.Option.getExn
-  ->CodeMirror.contents
-  ->Js.Json.parseExn
-  ->Js.Json.decodeString
-  ->Belt.Option.getExn
+let decodeJSONCodeEditor = (editor, dispatch) => {
+  let contents =
+    editor
+    ->Belt.Option.getExn
+    ->CodeMirror.contents
+
+  let value =
+    switch Js.Json.parseExn(contents) {
+    | exception _ => {
+        dispatch(State.UpdateState(state => { ...state, notification: Error("Invalid JSON")}))
+        None
+      }
+    | value => Some(value)
+    }
+
+  switch Belt.Option.map(value, Js.Json.classify) {
+  | Some(Js.Json.JSONString(value)) => Some(value)
+  | Some(_) => {
+      dispatch(UpdateState(state => { ...state, notification: Error("Only strings are allowed")}))
+      None
+    }
+  | None => None
+  }
 }
 
 @val external prompt : string => Js.Nullable.t<string> = "prompt"
@@ -81,7 +97,7 @@ let default = () => {
     | Success(message) =>
       <Notification onClose={_ => dispatch(Action(CloseNotification))}>
         <div className="text-green-400 pr-2">
-          <Icon.Exclamation />
+          <Icon.Check />
         </div>
         {React.string(message)}
       </Notification>
@@ -114,10 +130,14 @@ let default = () => {
       code.current
       ->Belt.Option.getExn
       ->CodeMirror.contents
-    let storage = decodeJSONCodeEditor(storage.current)
 
-    let operation = DekuOperation.InitialOperation.originate(~code, ~storage, ~tickets=state.selectedTickets)
-    dispatch(Action(MakeOperation(operation)))
+    switch decodeJSONCodeEditor(storage.current, dispatch) {
+    | Some(storage) => {
+        let operation = DekuOperation.InitialOperation.originate(~code, ~storage, ~tickets=state.selectedTickets)
+        dispatch(Action(MakeOperation(operation)))
+      }
+    | None => ()
+    }
   }
 
   let invoke = () => {
@@ -125,10 +145,13 @@ let default = () => {
     | Some(address) => address
     | None => failwith("Contract address is not available")
     }
-    let argument = decodeJSONCodeEditor(arguments.current)
-
-    let operation = DekuOperation.InitialOperation.invoke(~address, ~argument, ~tickets=state.selectedTickets)
-    dispatch(Action(MakeOperation(operation)))
+    switch decodeJSONCodeEditor(arguments.current, dispatch) {
+    | Some(argument) => {
+        let operation = DekuOperation.InitialOperation.invoke(~address, ~argument, ~tickets=state.selectedTickets)
+        dispatch(Action(MakeOperation(operation)))
+      }
+    | None => ()
+    }
   }
 
   let updateStorage = () => {
@@ -168,7 +191,7 @@ let default = () => {
 
         <div className="flex text-white p-2 my-2 mx-8 bg-deku-5 rounded-full align-self-center">
           <button
-            className="bg-deku-6 p-2 rounded-full disabled:text-gray-400"
+            className="bg-deku-6 p-2 rounded-full disabled:text-gray-400 hover:scale-110 transition-all"
             disabled={Belt.Option.isNone(state.contractAddress)}
             title="Invoke current contract"
             onClick=(_ => invoke())
@@ -186,7 +209,7 @@ let default = () => {
           {
             switch state.contractAddress {
             | Some(_) =>
-              <button className="text-white pr-4" onClick={_ => updateStorage()} title="Update storage and tickets">
+              <button className="text-white pr-4 hover:scale-110 transition-all" onClick={_ => updateStorage()} title="Update storage and tickets">
                 <Icon.Refresh />
               </button>
             | None => React.null

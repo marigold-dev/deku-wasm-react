@@ -7,7 +7,7 @@ type t =
 
 @react.component
 let make = (~currentTab, ~tab, ~icon, ~label, ~onSelect) => {
-  let style = if currentTab == tab { "bg-deku-1" } else { "bg-deku-3" }
+  let style = if currentTab == tab { "bg-deku-1" } else { "bg-deku-3 hover:bg-deku-2" }
 
   <button className={"flex px-4 py-1 text-white " ++ style} onClick={_ => onSelect(tab)} >
     {icon}

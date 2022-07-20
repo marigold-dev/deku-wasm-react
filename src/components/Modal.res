@@ -1,8 +1,8 @@
 
 @react.component
 let make = (~title, ~children, ~onClose) => {
-  <div className="flex justify-center items-center bg-gray-700/[.7] absolute w-full h-full z-50">
-    <div className="basis-1/2 h-1/2 text-white bg-gray-800 rounded p-6">
+  <div className="flex justify-center items-center bg-gray-700/[.7] absolute w-full h-full z-50" onClick={_ => onClose()}>
+    <div className="basis-1/2 h-1/2 text-white bg-gray-800 rounded p-6 bounce-in" onClick={ReactEvent.Synthetic.stopPropagation}>
       <header className="flex justify-between items-start">
         <Title.H2 label=title />
 

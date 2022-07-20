@@ -165,7 +165,7 @@ let actionHandler = (~state, ~log, action) => {
           | None =>
             UpdateState(state => {
               ...state,
-              notification: Error("Receipt not found")
+              notification: Error("Receipt not found, wait a few seconds.")
             })
           }
         })
@@ -188,6 +188,21 @@ let rec dispatch = (~state, ~stateDispatch, ~log, effect) => {
   | Defer(promise) =>
     promise
     ->thenResolve(dispatch(~state, ~stateDispatch, ~log))
+    ->catch((err) => {
+      Js.log(err)
+      switch err {
+      | JsError(err) => {
+          let message =
+            Belt.Option.getWithDefault(
+              Js.Exn.message(err),
+              "Unknown error",
+            )
+          resolve(dispatch(~state, ~stateDispatch, ~log, UpdateState(state => { ...state, notification: Error(message)})))
+        }
+      | err => raise(err)
+      }
+
+    })
     ->ignore
   | UpdateState(fn) => stateDispatch(fn)
   | Noop => ()
